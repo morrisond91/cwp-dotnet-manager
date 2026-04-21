@@ -55,7 +55,7 @@
 ┌─────────────────┐            │
 │  Customer Panel │────────────┘
 │  (port 2031)    │     SO_PEERCRED identity verification
-│  runs as user   │     (e.g. demomor, bindica, etc.)
+│  runs as user   │     
 └─────────────────┘
 ```
 
@@ -63,7 +63,7 @@
 
 1. **Account & Domain Selection** — When creating an app, the admin selects a CWP account first. The domain dropdown populates from CWP's `user` and `domains` tables. Selecting a domain auto-fills the working directory from CWP's stored domain path.
 
-2. **Nginx Vhost Generation** — On every create/update, the plugin renders nginx configs from template files (`nginx_http.template` / `nginx_ssl.template`) following the `demo.morrigroup.com` pattern:
+2. **Nginx Vhost Generation** — On every create/update, the plugin renders nginx configs from template files (`nginx_http.template` / `nginx_ssl.template`) following pattern:
    - HTTP server forces HTTPS redirect (`return 301 https://...`)
    - HTTPS server enables `ssl http2`, HSTS, and security headers
    - `proxy_pass` routes traffic to the local Kestrel port
