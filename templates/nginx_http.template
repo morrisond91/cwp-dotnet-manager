@@ -1,0 +1,60 @@
+server {
+	listen {{SERVERIP}}:80;
+	server_name {{DOMAIN}} www.{{DOMAIN}};
+
+	access_log /usr/local/apache/domlogs/{{DOMAIN}}.bytes bytes;
+	access_log /usr/local/apache/domlogs/{{DOMAIN}}.log combined;
+	error_log /usr/local/apache/domlogs/{{DOMAIN}}.error.log error;
+
+	location / {
+		location ~.*\.(3gp|gif|jpg|jpeg|png|ico|wmv|avi|asf|asx|mpg|mpeg|mp4|pls|mp3|mid|wav|swf|flv|html|htm|txt|js|css|exe|zip|tar|rar|gz|tgz|bz2|uha|7z|doc|docx|xls|xlsx|pdf|iso|woff|ttf|svg|eot|sh|webp)$ {
+			root {{DOCROOT}};
+			expires max;
+			try_files $uri $uri/ @backend;
+		}
+
+		error_page 405 = @backend;
+		error_page 500 = @custom;
+		add_header X-Cache "HIT from Backend";
+		add_header X-XSS-Protection "1; mode=block" always;
+		add_header X-Content-Type-Options "nosniff" always;
+		proxy_pass http://127.0.0.1:{{PORT}};
+		include proxy.inc;
+		return 301 https://$server_name$request_uri;
+	}
+
+	location @backend {
+		internal;
+		proxy_pass http://127.0.0.1:{{PORT}};
+		include proxy.inc;
+	}
+
+	location @custom {
+		internal;
+		proxy_pass http://127.0.0.1:{{PORT}};
+		include proxy.inc;
+	}
+
+	location ~ .*\.(php|jsp|cgi|pl|py)?$ {
+		proxy_pass http://127.0.0.1:{{PORT}};
+		include proxy.inc;
+	}
+
+	location ~ /\.ht    {deny all;}
+	location ~ /\.svn/  {deny all;}
+	location ~ /\.git/  {deny all;}
+	location ~ /\.hg/   {deny all;}
+	location ~ /\.bzr/  {deny all;}
+
+	disable_symlinks if_not_owner from={{DOCROOT}};
+
+	location /.well-known/acme-challenge {
+		default_type "text/plain";
+		alias /usr/local/apache/autossl_tmp/.well-known/acme-challenge;
+	}
+
+	location /.well-known/pki-validation {
+		default_type "text/plain";
+		alias /usr/local/apache/autossl_tmp/.well-known/acme-challenge;
+	}
+}

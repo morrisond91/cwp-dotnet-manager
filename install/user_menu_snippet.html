@@ -1,0 +1,6 @@
+<!-- Add this inside the <ul class="nav nav-second-level collapse"> block of the user menu_left.html
+     ideally near the other application managers like tomcat_manager -->
+
+{% if ("dotnetmanager" in rmenu )or(swmenu==1) %}
+    <li class="search"><a href="?module=DotNetManager">.NET Apps Manager</a></li>
+{% endif %}

@@ -1,0 +1,166 @@
+<style>
+    .dnb-user-status-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; }
+    .dnb-user-status-dot.running { background-color: #1ab394; box-shadow: 0 0 6px #1ab394; }
+    .dnb-user-status-dot.stopped { background-color: #ed5565; }
+    .dnb-user-status-dot.failed { background-color: #f8ac59; }
+    .dnb-user-log-box { background: #1e1e1e; color: #d4d4d4; font-family: 'Courier New', Courier, monospace; padding: 15px; border-radius: 4px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; font-size: 12px; }
+    .dnb-user-app-card { border: 1px solid #e7eaec; border-radius: 4px; padding: 20px; margin-bottom: 20px; background: #fff; }
+    .dnb-user-app-card .app-title { font-size: 18px; font-weight: 600; margin-bottom: 5px; }
+    .dnb-user-app-card .app-meta { color: #888; font-size: 13px; margin-bottom: 15px; }
+    .dnb-user-btn { min-width: 90px; margin-right: 5px; }
+    .dnb-user-badge { font-size: 12px; padding: 4px 8px; border-radius: 3px; }
+</style>
+
+<div class="row border-bottom white-bg dashboard-header">
+    <div class="col-lg-10">
+        <h2>{{langmod.DNM_TITLE}} ({{users}})</h2>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="?">Home</a></li>
+            <li class="breadcrumb-item active"><strong>{{langmod.DNM_TITLE}}</strong></li>
+        </ol>
+    </div>
+</div>
+
+<div class="row" style="margin-top:2rem">
+    <div class="col-lg-12">
+        {% if mod.has_apps == 0 %}
+            <div class="ibox">
+                <div class="ibox-content text-center" style="padding: 40px;">
+                    <i class="fa fa-cubes fa-4x text-muted"></i>
+                    <h3 class="mt-3 text-muted">{{langmod.DNM_NO_APPS}}</h3>
+                    <p class="text-muted">{{langmod.DNM_NO_APPS_MSG}}</p>
+                </div>
+            </div>
+        {% else %}
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="ibox">
+                        <div class="ibox-title">
+                            <h4>{{langmod.DNM_YOUR_APPS}} <span class="badge badge-primary">{{mod.app_count}}</span></h4>
+                        </div>
+                        <div class="ibox-content">
+                            {% for app in mod.apps %}
+                            <div class="dnb-user-app-card" id="app-card-{{app.name}}">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="app-title">
+                                            {% if app.status == 'active' %}
+                                                <span class="dnb-user-status-dot running"></span>
+                                            {% elseif app.status == 'failed' %}
+                                                <span class="dnb-user-status-dot failed"></span>
+                                            {% else %}
+                                                <span class="dnb-user-status-dot stopped"></span>
+                                            {% endif %}
+                                            {{app.name}}
+                                        </div>
+                                        <div class="app-meta">
+                                            <i class="fa fa-globe"></i> <a href="{{app.domain_url}}" target="_blank">{{app.domain}} <i class="fa fa-external-link" style="font-size:10px"></i></a> &nbsp;|&nbsp;
+                                            <i class="fa fa-folder-o"></i> {{app.working_directory}} &nbsp;|&nbsp;
+                                            <i class="fa fa-link"></i> <small>{{app.urls}}</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 text-right">
+                                        <span class="label label-default">PID: <span id="pid-{{app.name}}">{{app.pid}}</span></span>
+                                        <span class="label label-info">{{app.environment}}</span>
+                                    </div>
+                                </div>
+                                <div class="row" style="margin-top: 15px;">
+                                    <div class="col-md-6">
+                                        {% if app.status == 'active' %}
+                                            <button class="btn btn-danger btn-sm dnb-user-btn" onclick="dnmAction('{{app.name}}', 'stop')">
+                                                <i class="fa fa-stop"></i> {{langmod.DNM_BTN_STOP}}
+                                            </button>
+                                            <button class="btn btn-warning btn-sm dnb-user-btn" onclick="dnmAction('{{app.name}}', 'restart')">
+                                                <i class="fa fa-refresh"></i> {{langmod.DNM_BTN_RESTART}}
+                                            </button>
+                                        {% else %}
+                                            <button class="btn btn-success btn-sm dnb-user-btn" onclick="dnmAction('{{app.name}}', 'start')">
+                                                <i class="fa fa-play"></i> {{langmod.DNM_BTN_START}}
+                                            </button>
+                                        {% endif %}
+                                        <button class="btn btn-info btn-sm dnb-user-btn" onclick="dnmShowLogs('{{app.name}}')">
+                                            <i class="fa fa-file-text"></i> {{langmod.DNM_BTN_LOGS}}
+                                        </button>
+                                    </div>
+                                    <div class="col-md-6 text-right">
+                                        <span id="msg-{{app.name}}"></span>
+                                    </div>
+                                </div>
+                                <div class="row dnm-logs-row" id="logs-row-{{app.name}}" style="display:none; margin-top: 15px;">
+                                    <div class="col-md-12">
+                                        <div class="clearfix" style="margin-bottom: 8px;">
+                                            <strong>{{langmod.DNM_LOGS_TITLE}}</strong>
+                                            <div class="pull-right">
+                                                <select class="form-control input-sm" style="display:inline; width:auto;" id="loglines-{{app.name}}" onchange="dnmShowLogs('{{app.name}}')">
+                                                    <option value="50">50 lines</option>
+                                                    <option value="100">100 lines</option>
+                                                    <option value="200">200 lines</option>
+                                                </select>
+                                                <button class="btn btn-default btn-sm" onclick="dnmShowLogs('{{app.name}}')"><i class="fa fa-refresh"></i></button>
+                                                <button class="btn btn-default btn-sm" onclick="$('#logs-row-{{app.name}}').slideUp();"><i class="fa fa-times"></i></button>
+                                            </div>
+                                        </div>
+                                        <div class="dnb-user-log-box" id="logbox-{{app.name}}">Loading...</div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="text-muted text-right" style="padding: 15px 0; font-size: 11px; border-top: 1px solid #e7eaec; margin-top: 20px;">
+            <i class="fa fa-code"></i> DotNetManager v{{ mod.version }}
+        </div>
+    </div>
+</div>
+
+<script>
+function dnmAction(appName, action) {
+    var btn = event.target.closest('button');
+    $(btn).prop('disabled', true).html('<i class="fa fa-circle-o-notch fa-spin"></i>');
+    $.ajax({
+        type: 'POST',
+        url: './{{users}}/index.php?module=DotNetManager&acc=' + action,
+        data: { app: appName, csrf_token: '{{ mod.csrf_token }}' },
+        dataType: 'json',
+        success: function(data) {
+            if (data.success) {
+                $('#msg-' + appName).html('<span class="label label-success">' + action + ' OK</span>');
+                setTimeout(function() { location.reload(); }, 800);
+            } else {
+                $('#msg-' + appName).html('<span class="label label-danger">' + (data.message || 'Failed') + '</span>');
+                $(btn).prop('disabled', false);
+            }
+        },
+        error: function() {
+            $('#msg-' + appName).html('<span class="label label-danger">Error</span>');
+            $(btn).prop('disabled', false);
+        }
+    });
+}
+
+function dnmShowLogs(appName) {
+    var lines = $('#loglines-' + appName).val() || 50;
+    $('#logs-row-' + appName).slideDown();
+    $('#logbox-' + appName).text('Loading...');
+    $.ajax({
+        type: 'POST',
+        url: './{{users}}/index.php?module=DotNetManager&acc=logs',
+        data: { app: appName, lines: lines, csrf_token: '{{ mod.csrf_token }}' },
+        dataType: 'json',
+        success: function(data) {
+            if (data.success) {
+                $('#logbox-' + appName).text(data.logs);
+            } else {
+                $('#logbox-' + appName).text('Failed to load logs.');
+            }
+        },
+        error: function() {
+            $('#logbox-' + appName).text('Error loading logs.');
+        }
+    });
+}
+</script>

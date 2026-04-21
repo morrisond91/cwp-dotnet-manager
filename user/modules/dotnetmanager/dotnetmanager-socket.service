@@ -1,0 +1,16 @@
+[Unit]
+Description=DotNetManager User Control Socket Daemon
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/local/cwpsrv/var/services/user_files/modules/dotnetmanager/socketd.py
+Restart=always
+RestartSec=5
+User=root
+Group=root
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
